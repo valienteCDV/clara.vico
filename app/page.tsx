@@ -1,4 +1,4 @@
-import { CalendarioMensual } from "@/components/ui/calendar/calendario-mensual";
+import { CalendarioMensual } from "./calendar/calendario-mensual";
 
 export default function Home() {
   return (
