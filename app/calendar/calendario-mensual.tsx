@@ -606,7 +606,7 @@ export const CalendarioMensual: React.FC = () => {
         <div>
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
             {/* Título del mes con estilo armonizado */}
-            <div className="flex items-center">
+            <div className="hidden sm:flex items-center">
               <div className="text-2xl font-bold px-4 py-2 rounded-md bg-blue-50 border border-blue-100 shadow-sm">
                 {nombresMeses[fechaActual.getMonth()]}{" "}
                 {fechaActual.getFullYear()}
