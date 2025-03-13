@@ -4,9 +4,13 @@ import { Paperclip } from "lucide-react";
 
 interface InfoFinDeSemanaProps {
   fecha: Date; // Fecha del viernes
+  animar?: boolean; // Indica si se debe animar el post-it
 }
 
-export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
+export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
+  fecha,
+  animar = false,
+}) => {
   // Solo mostrar para los viernes
   if (fecha.getDay() !== 5) return null;
 
@@ -28,10 +32,12 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
   // Esta lógica podría ajustarse según las reglas específicas de custodia
   const progenitorFinDeSemana = calendarData.progenitores[semanaDelMes % 2];
 
-  // Calcular la posición vertical basada en la semana del mes
-  // para que cada post-it aparezca en su línea correspondiente
-  const semana = Math.ceil(fecha.getDate() / 7);
-  const top = `${semana * 20 - 15}%`;
+  // Asignamos una posición fija según el índice de la semana
+  // Esto permite que los post-its estén siempre en la misma posición vertical
+  const indice = Math.floor((fecha.getDate() - 1) / 7); // 0 para primera semana, 1 para segunda, etc
+  // Posición fija para cada índice de semana (en píxeles, no en porcentaje)
+  const posicionesFijas = [20, 220, 420, 620, 800];
+  const top = `${posicionesFijas[indice]}px`;
 
   // Estilo para el post-it de fin de semana, con rotación aleatoria consistente
   const rotacion =
@@ -58,9 +64,12 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
     justifyContent: "center",
   };
 
+  // Clase CSS para la animación
+  const clasePostIt = `w-28 h-36 post-it ${animar ? "sacudir-post-it" : ""}`;
+
   return (
     <div className="absolute -right-26" style={{ top }}>
-      <div style={postItStyle} className="w-28 h-36">
+      <div style={postItStyle} className={clasePostIt}>
         {/* Clip decorativo */}
         <div
           style={{
@@ -83,13 +92,7 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
           {fechaSabado.getDate()} y {fechaDomingo.getDate()}
         </div>
         <div className="text-center">
-          <span
-            className="text-xs font-semibold py-1 px-2 inline-block"
-            style={{
-              backgroundColor: "rgba(0,0,0,0.1)",
-              borderRadius: "8px",
-            }}
-          >
+          <span className="text-xs text-gray-400">
             {progenitorFinDeSemana.nombre}
           </span>
         </div>

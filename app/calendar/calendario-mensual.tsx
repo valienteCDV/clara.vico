@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { calendarData } from "../lib/calendar-data";
 import {
   EventoCalendario,
@@ -181,6 +181,7 @@ interface DiaCeldaProps {
   eventos: EventoCalendario[];
   esDiaActual: boolean;
   esOtroMes?: boolean;
+  animar?: boolean;
 }
 
 const DiaCelda: React.FC<DiaCeldaProps> = ({
@@ -188,6 +189,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
   eventos,
   esDiaActual,
   esOtroMes = false,
+  animar = false,
 }) => {
   if (!fecha) {
     return <div className="min-h-40"></div>;
@@ -219,28 +221,37 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
       ? "-1deg"
       : "0.5deg";
 
-  // Estilo para crear el efecto de "post-it" con inclinación aleatoria
+  // Preparamos los estilos y clases para el efecto post-it
+  const backgroundColor =
+    eventoCustodia && eventoCustodia.tipo === "custodia"
+      ? eventoCustodia.colorFondo
+      : esOtroMes
+      ? "#f3f3f3" // Color gris claro para días de otro mes
+      : "#fffdf7"; // Color crema suave para el post-it del mes actual
+
+  // Construimos las clases CSS
+  const postItClasses = [
+    "post-it",
+    esDiaActual ? "dia-actual" : "",
+    animar ? "sacudir-post-it" : "",
+    "h-auto min-h-40 overflow-y-auto hover:shadow-lg flex flex-col",
+    esDiaActual ? "ring-2 ring-offset-2 ring-blue-400" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // Propiedades de estilo que necesitamos aplicar directamente
   const postItStyle: React.CSSProperties = {
-    backgroundColor:
-      eventoCustodia && eventoCustodia.tipo === "custodia"
-        ? eventoCustodia.colorFondo
-        : esOtroMes
-        ? "#f3f3f3" // Color gris claro para días de otro mes
-        : "#fffdf7", // Color crema suave para el post-it del mes actual
-    opacity: esOtroMes ? 0.8 : 1, // Reducir un poco la opacidad para días de otro mes
-    transform: `rotate(${rotacion})`, // Inclinación aleatoria
-    boxShadow: esDiaActual
-      ? "0 0 20px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.4), 2px 4px 6px rgba(0,0,0,0.15)" // Sombra azul más intensa para el día actual
-      : "2px 4px 6px rgba(0,0,0,0.15)", // Sombra suave para otros días
-    position: "relative", // Para posicionar el "pinche" de forma absoluta
-    padding: "10px 12px 16px 12px", // Reducimos padding arriba y aumentamos abajo para el badge
+    backgroundColor,
+    opacity: esOtroMes ? 0.8 : 1,
+    "--rotacion-inicial": rotacion,
+    padding: "10px 12px 16px 12px",
     border: "1px solid rgba(0,0,0,0.1)",
-    transition: "all 0.3s ease",
-    // Solo animar la sombra, no el post-it entero
-    animation: esDiaActual ? "pulseShadow 2s infinite alternate" : "none",
-    // Limitamos la altura máxima para que los post-it sean más compactos
+    boxShadow: esDiaActual
+      ? undefined // Ya aplicado por la clase dia-actual
+      : "2px 4px 6px rgba(0,0,0,0.15)",
     maxHeight: "200px",
-  };
+  } as React.CSSProperties;
 
   // Filtramos solo eventos de logística
   const eventosLogistica = eventosDia.filter(
@@ -265,12 +276,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
   const tieneMuchosEventos = cantidadEventos > 4;
 
   return (
-    <div
-      className={`h-auto min-h-40 overflow-y-auto transition-all hover:shadow-lg flex flex-col ${
-        esDiaActual ? "ring-2 ring-offset-2 ring-blue-400" : ""
-      }`}
-      style={postItStyle}
-    >
+    <div className={postItClasses} style={postItStyle}>
       <div className="flex justify-center items-start border-b border-gray-400">
         <div
           className={`font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-sm md:text-base ${
@@ -281,13 +287,13 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
         </div>
       </div>
 
-      {/* Badge de progenitor posicionado absolutamente en la esquina inferior derecha pero detrás de los eventos */}
+      {/* Nombre de progenitor discreto en la esquina inferior derecha detrás de los eventos */}
       {eventoCustodia && eventoCustodia.tipo === "custodia" && (
         <div
-          className="absolute bottom-1 right-1 z-0"
+          className="absolute left-0 right-0 bottom-0 flex justify-center z-10"
           style={{ pointerEvents: "none" }}
         >
-          <span className="text-xs font-semibold px-1.5 py-0.5 bg-black/10 text-black rounded-md">
+          <span className="text-xs text-gray-400">
             {eventoCustodia.progenitorNombre}
           </span>
         </div>
@@ -365,10 +371,62 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
 
 // Componente principal del calendario
 export const CalendarioMensual: React.FC = () => {
+  // Estado para controlar cuándo animar los post-its
+  const [debeAnimar, setDebeAnimar] = useState(false);
+  const [animacionCargaPagina, setAnimacionCargaPagina] = useState(true);
+
+  // Estado para la animación de transición entre meses
+  const [direccionTransicion, setDireccionTransicion] = useState<
+    "izquierda" | "derecha" | null
+  >(null);
+  const [animandoTransicion, setAnimandoTransicion] = useState(false);
+
+  // Estado para la fecha actual del calendario
   const [fechaActual, setFechaActual] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
+  // Efecto para ejecutar la animación cuando se carga la página
+  useEffect(() => {
+    // Primera carga
+    setTimeout(() => {
+      setAnimacionCargaPagina(false);
+    }, 600);
+
+    // Manejador de eventos para las teclas de flecha
+    const manejarTeclas = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        retrocederMes();
+      } else if (e.key === "ArrowRight") {
+        avanzarMes();
+      }
+    };
+
+    // Agregar y quitar el event listener
+    window.addEventListener("keydown", manejarTeclas);
+    return () => {
+      window.removeEventListener("keydown", manejarTeclas);
+    };
+  }, []);
+
+  // Efecto para animar los post-its cuando cambia el mes
+  useEffect(() => {
+    // Solo animar si no es la primera carga y hay una dirección definida
+    if (!animacionCargaPagina && direccionTransicion) {
+      setDebeAnimar(true);
+      setAnimandoTransicion(true);
+
+      // Resetear la animación después de completarse
+      const timer = setTimeout(() => {
+        setDebeAnimar(false);
+        setAnimandoTransicion(false);
+        setDireccionTransicion(null);
+      }, 500); // Duración de la animación
+
+      return () => clearTimeout(timer);
+    }
+  }, [fechaActual, animacionCargaPagina, direccionTransicion]);
 
   const eventos = useMemo(() => {
     const primerDiaMes = new Date(
@@ -413,19 +471,39 @@ export const CalendarioMensual: React.FC = () => {
   }, [fechaActual]);
 
   const avanzarMes = () => {
+    // Prevenimos múltiples clics durante la animación
+    if (animandoTransicion) return;
+
+    setDireccionTransicion("izquierda");
     setFechaActual(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
     );
   };
 
   const retrocederMes = () => {
+    // Prevenimos múltiples clics durante la animación
+    if (animandoTransicion) return;
+
+    setDireccionTransicion("derecha");
     setFechaActual(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
     );
   };
 
   const irAlMesActual = () => {
+    // Prevenimos múltiples clics durante la animación
+    if (animandoTransicion) return;
+
     const now = new Date();
+    const mesActual = now.getMonth();
+
+    // Determinamos qué dirección usar comparando con el mes actual
+    if (fechaActual.getMonth() < mesActual) {
+      setDireccionTransicion("izquierda");
+    } else if (fechaActual.getMonth() > mesActual) {
+      setDireccionTransicion("derecha");
+    }
+
     setFechaActual(new Date(now.getFullYear(), now.getMonth(), 1));
   };
 
@@ -569,6 +647,7 @@ export const CalendarioMensual: React.FC = () => {
               eventos={eventos}
               esDiaActual={esDiaActual}
               esOtroMes={esOtroMes}
+              animar={debeAnimar || animacionCargaPagina}
             />
           );
         } else {
@@ -595,30 +674,14 @@ export const CalendarioMensual: React.FC = () => {
         msOverflowStyle: "none",
       }}
     >
-      <div className="min-w-[720px] w-full max-w-[1050] mx-auto sm:p-4">
-        {/* Número de versión */}
-        <div className="absolute top-2 right-4 z-50">
+      <div className="min-w-[720px] w-full max-w-[1120px] mx-auto p-1 sm:p-4 relative">
+        {/* Número de versión - en la parte inferior derecha alineado con los post-it */}
+        <div className="absolute right-0 bottom-1 z-10">
           <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md shadow-sm">
-            v3.2
+            v3.3
           </span>
         </div>
-        {/* Estilos globales para animaciones */}
-        <style jsx global>{`
-          @keyframes pulseShadow {
-            0% {
-              box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
-                0 0 30px rgba(59, 130, 246, 0.3);
-            }
-            50% {
-              box-shadow: 0 0 25px rgba(59, 130, 246, 0.7),
-                0 0 35px rgba(59, 130, 246, 0.5);
-            }
-            100% {
-              box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
-                0 0 30px rgba(59, 130, 246, 0.3);
-            }
-          }
-        `}</style>
+        {/* Las animaciones ahora están en globals.css */}
 
         {/* Header con navegación y estadísticas */}
         <div>
@@ -680,7 +743,11 @@ export const CalendarioMensual: React.FC = () => {
               if (fecha.getDay() === 5) {
                 // 5 = viernes
                 viernes.push(
-                  <InfoFinDeSemana key={`finde-${i}`} fecha={fecha} />
+                  <InfoFinDeSemana
+                    key={`finde-${i}`}
+                    fecha={fecha}
+                    animar={debeAnimar || animacionCargaPagina}
+                  />
                 );
               }
             }

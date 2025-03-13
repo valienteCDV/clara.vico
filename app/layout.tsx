@@ -32,14 +32,21 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
         <style>{`
-          html, body {
+          html {
             background-color: #f0f4f8;
             color-scheme: light only;
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+          }
+          body {
+            background-color: #f0f4f8;
+            color-scheme: light only;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
           }
         `}</style>
       </head>
