@@ -539,7 +539,12 @@ export const CalendarioMensual: React.FC = () => {
   return (
     <div
       className="w-full overflow-x-auto"
-      style={{ WebkitOverflowScrolling: "touch" }}
+      style={{
+        WebkitOverflowScrolling: "touch",
+        touchAction: "auto !important",
+        msOverflowStyle: "none",
+        scrollbarWidth: "none",
+      }}
     >
       <div className="min-w-[1000px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
         {/* Estilos globales para animaciones */}

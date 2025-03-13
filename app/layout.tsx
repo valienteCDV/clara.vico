@@ -15,13 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "",
   description: "",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    minimumScale: 0.5,
-    maximumScale: 3,
-    userScalable: true,
-  },
+  // Quitamos la configuración del viewport de aquí ya que la agregaremos directamente en el head
 };
 
 export default function RootLayout({
@@ -32,18 +26,53 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" data-force-theme="light">
       <head>
+        {/* Meta tag viewport simplificada */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes"
+        />
         <style>{`
           html, body {
             background-color: #f0f4f8;
-            overscroll-behavior: none;
             color-scheme: light only;
+            /* Eliminamos overscroll-behavior que puede interferir con el zoom */
           }
           
-          /* Permitir todos los gestos táctiles, incluido el zoom */
+          /* Eliminamos cualquier restricción de gestos táctiles */
           * {
-            touch-action: auto;
+            touch-action: auto !important;
+            -ms-touch-action: auto !important;
           }
         `}</style>
+
+        {/* Script para asegurar que el zoom funcione */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            // Asegurarnos que el zoom funcione correctamente, especialmente el zoom out
+            document.addEventListener('DOMContentLoaded', function() {
+              // Forzar que el viewport permita zoom completo (acercar y alejar)
+              const meta = document.querySelector('meta[name="viewport"]');
+              if (meta) {
+                meta.content = 'width=device-width, initial-scale=1.0, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes';
+              }
+              
+              // Prevenir cualquier evento que pueda estar bloqueando el zoom
+              const preventZoomHandler = function(e) {
+                // No prevenir eventos de zoom
+                if (e.ctrlKey || e.metaKey || e.touches?.length > 1) {
+                  e.stopImmediatePropagation();
+                }
+              };
+              
+              // Aplicar a eventos relevantes
+              document.addEventListener('touchstart', preventZoomHandler, true);
+              document.addEventListener('touchmove', preventZoomHandler, true);
+              document.addEventListener('wheel', preventZoomHandler, true);
+            });
+          `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased light`}
