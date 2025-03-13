@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { calendarData } from "@/lib/calendar-data";
+import { calendarData } from "../lib/calendar-data";
 import {
   EventoCalendario,
   generarEventosCalendario,
-} from "@/lib/calendar-utils";
+} from "../lib/calendar-utils";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { InfoFinDeSemana } from "./info-fin-de-semana";
 // Iconos para eventos de logística

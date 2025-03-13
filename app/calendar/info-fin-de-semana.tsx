@@ -1,5 +1,5 @@
 import React from "react";
-import { calendarData } from "@/lib/calendar-data";
+import { calendarData } from "../lib/calendar-data";
 import { Paperclip } from "lucide-react";
 
 interface InfoFinDeSemanaProps {
