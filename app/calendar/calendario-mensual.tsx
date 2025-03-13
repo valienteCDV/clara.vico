@@ -6,14 +6,9 @@ import {
   EventoCalendario,
   generarEventosCalendario,
   EventoCustodia,
+  EventoActividad,
 } from "../lib/calendar-utils";
-import { ArrowUp, ArrowDown } from "lucide-react";
 import { InfoFinDeSemana } from "./info-fin-de-semana";
-// Iconos para eventos de logística
-const iconosLogistica: Record<string, React.ReactNode> = {
-  llevar: <ArrowUp className="w-4 h-4" />,
-  recoger: <ArrowDown className="w-4 h-4" />,
-};
 
 // Componente para mostrar indicadores de distribución de días
 interface IndicadorDistribucionProps {
@@ -252,7 +247,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
       }`}
       style={postItStyle}
     >
-      <div className="flex justify-between items-start mb-1 pb-1 border-b border-gray-300">
+      <div className="flex justify-center items-start mb-1 pb-1 border-b border-gray-300">
         <div
           className={`font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-sm md:text-base ${
             esOtroMes ? "text-gray-500" : ""
@@ -260,53 +255,95 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
         >
           {diaSemana} {fecha.getDate()} de {nombresMeses[fecha.getMonth()]}
         </div>
-
-        <div className="flex items-center">
-          {eventoCustodia && eventoCustodia.tipo === "custodia" && (
-            <span className="text-xs font-semibold px-1.5 py-0.5 bg-black/10 text-black rounded-md mr-1">
-              {eventoCustodia.progenitorNombre}
-            </span>
-          )}
-        </div>
       </div>
 
-      <div className="flex-grow">
-        {/* Renderizar todos los eventos ordenados por hora */}
-        <div className="mt-2 space-y-1">
-          {eventosDia
-            .filter((evento) => evento.tipo === "logistica")
-            .sort((a, b) => {
-              // Convertir a minutos desde medianoche para ordenar por hora
-              const aMinutos = a.fecha.getHours() * 60 + a.fecha.getMinutes();
-              const bMinutos = b.fecha.getHours() * 60 + b.fecha.getMinutes();
-              return aMinutos - bMinutos;
-            })
-            .map((evento, idx) => {
-              if (evento.tipo !== "logistica") return null;
+      {/* Badge de progenitor posicionado absolutamente en la esquina inferior derecha pero detrás de los eventos */}
+      {eventoCustodia && eventoCustodia.tipo === "custodia" && (
+        <div
+          className="absolute bottom-1 right-1 z-0"
+          style={{ pointerEvents: "none" }}
+        >
+          <span className="text-xs font-semibold px-1.5 py-0.5 bg-black/10 text-black rounded-md">
+            {eventoCustodia.progenitorNombre}
+          </span>
+        </div>
+      )}
 
-              return (
-                <div
-                  key={`${evento.actividadId}-${evento.subTipo}-${idx}`}
-                  className="flex items-center text-xs p-1 rounded-sm mb-1 transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full"
-                  style={{
-                    backgroundColor: evento.colorActividad,
-                    color: "#333333", // Texto oscuro para mejor contraste
-                    border: `1px solid ${evento.colorActividad}`,
-                    fontWeight: 500, // Texto semi-negrita para mejor legibilidad
-                  }}
-                >
-                  <span className="mr-1 flex-shrink-0">
-                    {iconosLogistica[evento.subTipo]}
-                  </span>
-                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                    {evento.fecha.getHours().toString().padStart(2, "0")}:
-                    {evento.fecha.getMinutes().toString().padStart(2, "0")}
-                    {" • "}
-                    {evento.actividadNombre}
-                  </span>
-                </div>
+      <div className="flex-grow relative">
+        {/* Renderizar todos los eventos agrupados por actividad */}
+        <div className="mt-2 space-y-1 relative z-10">
+          {(() => {
+            // Filtramos solo eventos de logística
+            const eventosLogistica = eventosDia.filter(
+              (evento) => evento.tipo === "logistica"
+            );
+
+            // Agrupamos eventos por actividadId
+            const eventosPorActividad: Record<string, EventoActividad[]> = {};
+
+            eventosLogistica.forEach((evento) => {
+              if (evento.tipo !== "logistica") return;
+
+              if (!eventosPorActividad[evento.actividadId]) {
+                eventosPorActividad[evento.actividadId] = [];
+              }
+
+              eventosPorActividad[evento.actividadId].push(
+                evento as EventoActividad
               );
-            })}
+            });
+
+            // Procesamos cada grupo de eventos
+            return Object.entries(eventosPorActividad).map(
+              ([actividadId, eventos]) => {
+                // Ordenamos los eventos por hora
+                eventos.sort((a, b) => {
+                  const aMinutos =
+                    a.fecha.getHours() * 60 + a.fecha.getMinutes();
+                  const bMinutos =
+                    b.fecha.getHours() * 60 + b.fecha.getMinutes();
+                  return aMinutos - bMinutos;
+                });
+
+                // Encontramos los eventos de llevar y recoger
+                const eventoLlevar = eventos.find(
+                  (e) => e.subTipo === "llevar"
+                );
+                const eventoRecoger = eventos.find(
+                  (e) => e.subTipo === "recoger"
+                );
+
+                // Si no tenemos ambos eventos, no mostramos nada
+                if (!eventoLlevar || !eventoRecoger) return null;
+
+                const horaInicio = eventoLlevar.fecha
+                  .getHours()
+                  .toString()
+                  .padStart(2, "0");
+                const horaFin = eventoRecoger.fecha
+                  .getHours()
+                  .toString()
+                  .padStart(2, "0");
+
+                return (
+                  <div
+                    key={actividadId}
+                    className="flex items-center text-xs p-1 rounded-sm mb-1 transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full"
+                    style={{
+                      backgroundColor: eventoLlevar.colorActividad,
+                      color: "#333333", // Texto oscuro para mejor contraste
+                      border: `1px solid ${eventoLlevar.colorActividad}`,
+                      fontWeight: 500, // Texto semi-negrita para mejor legibilidad
+                    }}
+                  >
+                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                      {horaInicio}a{horaFin} {eventoLlevar.actividadNombre}
+                    </span>
+                  </div>
+                );
+              }
+            );
+          })()}
         </div>
       </div>
     </div>
@@ -546,7 +583,7 @@ export const CalendarioMensual: React.FC = () => {
         scrollbarWidth: "none",
       }}
     >
-      <div className="min-w-[1000px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
+      <div className="min-w-[950px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
         {/* Estilos globales para animaciones */}
         <style jsx global>{`
           @keyframes pulseShadow {

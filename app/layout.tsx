@@ -29,7 +29,7 @@ export default function RootLayout({
         {/* Meta tag viewport simplificada */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes"
+          content="width=device-width, initial-scale=0.2, maximum-scale=5, user-scalable=yes"
         />
         <style>{`
           html, body {

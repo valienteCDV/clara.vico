@@ -87,9 +87,10 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
             className="text-xs font-semibold py-1 px-2 inline-block"
             style={{
               backgroundColor: "rgba(0,0,0,0.1)",
+              borderRadius: "8px",
             }}
           >
-            Con {progenitorFinDeSemana.nombre}
+            {progenitorFinDeSemana.nombre}
           </span>
         </div>
       </div>
