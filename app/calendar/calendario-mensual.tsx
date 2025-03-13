@@ -5,6 +5,7 @@ import { calendarData } from "../lib/calendar-data";
 import {
   EventoCalendario,
   generarEventosCalendario,
+  EventoCustodia,
 } from "../lib/calendar-utils";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { InfoFinDeSemana } from "./info-fin-de-semana";
@@ -12,6 +13,135 @@ import { InfoFinDeSemana } from "./info-fin-de-semana";
 const iconosLogistica: Record<string, React.ReactNode> = {
   llevar: <ArrowUp className="w-4 h-4" />,
   recoger: <ArrowDown className="w-4 h-4" />,
+};
+
+// Componente para mostrar indicadores de distribución de días
+interface IndicadorDistribucionProps {
+  eventos: EventoCalendario[];
+  fechaActual: Date;
+}
+
+const IndicadorDistribucion: React.FC<IndicadorDistribucionProps> = ({
+  eventos,
+  fechaActual,
+}) => {
+  // Función para calcular estadísticas por progenitor
+  const calcularEstadisticas = () => {
+    const mesActual = fechaActual.getMonth();
+    const añoActual = fechaActual.getFullYear();
+
+    // Filtrar eventos del mes actual
+    const eventosMes = eventos.filter(
+      (evento) =>
+        evento.fecha.getMonth() === mesActual &&
+        evento.fecha.getFullYear() === añoActual
+    );
+
+    // Filtrar eventos de custodia
+    const eventosCustodia = eventosMes.filter(
+      (evento) => evento.tipo === "custodia"
+    ) as EventoCustodia[];
+
+    // Total de días en el mes
+    const diasTotales = eventosCustodia.length;
+
+    // Inicializar contadores por progenitor
+    const diasPorProgenitor = {
+      mama: 0,
+      papa: 0,
+    };
+
+    // Contar días por progenitor
+    eventosCustodia.forEach((evento) => {
+      if (evento.progenitorId === "mama" || evento.progenitorId === "papa") {
+        diasPorProgenitor[evento.progenitorId]++;
+      }
+    });
+
+    // Filtrar eventos de logística
+    const eventosLogistica = eventosMes.filter(
+      (evento) => evento.tipo === "logistica"
+    );
+
+    // Contador de eventos por progenitor
+    const eventosPorProgenitor = {
+      mama: 0,
+      papa: 0,
+    };
+
+    // Asociar eventos de logística con el progenitor del día
+    eventosLogistica.forEach((evento) => {
+      // Encontrar qué progenitor tiene la custodia ese día
+      const fecha = new Date(evento.fecha);
+      fecha.setHours(0, 0, 0, 0); // Normalizar la hora a medianoche
+
+      // Buscar el evento de custodia para este día
+      const custodiaDia = eventosCustodia.find(
+        (ec) =>
+          ec.fecha.getDate() === fecha.getDate() &&
+          ec.fecha.getMonth() === fecha.getMonth() &&
+          ec.fecha.getFullYear() === fecha.getFullYear()
+      );
+
+      if (
+        custodiaDia &&
+        (custodiaDia.progenitorId === "mama" ||
+          custodiaDia.progenitorId === "papa")
+      ) {
+        eventosPorProgenitor[custodiaDia.progenitorId]++;
+      }
+    });
+
+    return {
+      diasTotales,
+      diasPorProgenitor,
+      eventosPorProgenitor,
+    };
+  };
+
+  const { diasTotales, diasPorProgenitor, eventosPorProgenitor } =
+    calcularEstadisticas();
+
+  // No mostrar nada si no hay datos para el mes
+  if (diasTotales === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 items-center justify-center">
+      {/* Indicadores para Mamá */}
+      <div
+        className="flex items-center px-3 py-1.5 rounded-md shadow-sm transition-transform hover:scale-105"
+        style={{
+          backgroundColor: "#E6D6FF",
+          border: "1px solid rgba(0,0,0,0.1)",
+        }}
+      >
+        <span className="font-semibold mr-1">Mamá:</span>
+        <span className="mx-1 text-sm">
+          {diasPorProgenitor.mama} días (
+          {Math.round((diasPorProgenitor.mama / diasTotales) * 100)}%)
+        </span>
+        <span className="mx-1 text-xs opacity-60">•</span>
+        <span className="text-sm">{eventosPorProgenitor.mama} eventos</span>
+      </div>
+
+      {/* Indicadores para Papá */}
+      <div
+        className="flex items-center px-3 py-1.5 rounded-md shadow-sm transition-transform hover:scale-105"
+        style={{
+          backgroundColor: "#D6FFE6",
+          border: "1px solid rgba(0,0,0,0.1)",
+        }}
+      >
+        <span className="font-semibold mr-1">Papá:</span>
+        <span className="mx-1 text-sm">
+          {diasPorProgenitor.papa} días (
+          {Math.round((diasPorProgenitor.papa / diasTotales) * 100)}%)
+        </span>
+        <span className="mx-1 text-xs opacity-60">•</span>
+        <span className="text-sm">{eventosPorProgenitor.papa} eventos</span>
+      </div>
+    </div>
+  );
 };
 
 // Nombres de los días de la semana completos
@@ -65,7 +195,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
   esOtroMes = false,
 }) => {
   if (!fecha) {
-    return <div className="min-h-32 md:min-h-40"></div>;
+    return <div className="min-h-40"></div>;
   }
 
   // Filtrar eventos solo para este día específico
@@ -407,118 +537,93 @@ export const CalendarioMensual: React.FC = () => {
   };
 
   return (
-    <div className="max-w-screen-xl mx-auto p-2 sm:p-4">
-      {/* Estilos globales para animaciones */}
-      <style jsx global>{`
-        @keyframes pulseShadow {
-          0% {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
-              0 0 30px rgba(59, 130, 246, 0.3);
-          }
-          50% {
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.7),
-              0 0 35px rgba(59, 130, 246, 0.5);
-          }
-          100% {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
-              0 0 30px rgba(59, 130, 246, 0.3);
-          }
-        }
-      `}</style>
-
-      {/* Encabezado con leyenda */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-        <div className="text-xl font-bold mb-3 sm:mb-0">
-          {nombresMeses[fechaActual.getMonth()]} {fechaActual.getFullYear()}
-        </div>
-
-        {/* Leyenda de colores centrada */}
-        <div className="flex justify-center gap-8 text-lg mb-3 sm:mb-0">
-          <div className="flex items-center gap-2">
-            {calendarData.progenitores.map((progenitor) => (
-              <div key={progenitor.id} className="flex items-center mr-3">
-                <div
-                  className="w-8 h-5 mr-1 rounded-md border border-gray-400"
-                  style={{ backgroundColor: progenitor.colorFondo }}
-                />
-                <span>{progenitor.nombre}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {calendarData.niños.map((niño) => (
-              <div key={niño.id} className="flex items-center mr-3">
-                <div
-                  className="w-8 h-5 mr-1 rounded-md border border-gray-400"
-                  style={{ backgroundColor: niño.colorActividad }}
-                />
-                <span>{niño.nombre}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Botones de navegación */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={retrocederMes}
-            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm hover:shadow flex items-center"
-          >
-            <span className="mr-1">←</span> Anterior
-          </button>
-          <button
-            onClick={irAlMesActual}
-            className="px-6 py-2 bg-gray-600 text-white rounded-full hover:bg-gray-700 transition-colors shadow-sm hover:shadow"
-          >
-            Hoy
-          </button>
-          <button
-            onClick={avanzarMes}
-            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm hover:shadow flex items-center"
-          >
-            Siguiente <span className="ml-1">→</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Encabezado de los días de la semana */}
-      <div className="grid grid-cols-5 gap-4 mb-2">
-        {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"].map(
-          (dia, index) => (
-            <div
-              key={`header-${index}`}
-              className="px-2 py-1 font-semibold text-center"
-            >
-              {dia}
-            </div>
-          )
-        )}
-      </div>
-
-      {/* Contenedor principal del calendario */}
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-4 p-2 relative">
-        {/* Días del mes organizados por semanas y días */}
-        {generarCalendario()}
-
-        {/* Post-its con información de fin de semana */}
-        {(() => {
-          const viernes = [];
-          const mesActual = fechaActual.getMonth();
-          const añoActual = fechaActual.getFullYear();
-
-          // Buscar todos los viernes del mes actual
-          for (let i = 1; i <= obtenerDiasMes(fechaActual); i++) {
-            const fecha = new Date(añoActual, mesActual, i);
-            if (fecha.getDay() === 5) {
-              // 5 = viernes
-              viernes.push(
-                <InfoFinDeSemana key={`finde-${i}`} fecha={fecha} />
-              );
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
+        {/* Estilos globales para animaciones */}
+        <style jsx global>{`
+          @keyframes pulseShadow {
+            0% {
+              box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
+                0 0 30px rgba(59, 130, 246, 0.3);
+            }
+            50% {
+              box-shadow: 0 0 25px rgba(59, 130, 246, 0.7),
+                0 0 35px rgba(59, 130, 246, 0.5);
+            }
+            100% {
+              box-shadow: 0 0 20px rgba(59, 130, 246, 0.5),
+                0 0 30px rgba(59, 130, 246, 0.3);
             }
           }
-          return viernes;
-        })()}
+        `}</style>
+
+        {/* Header con navegación y estadísticas */}
+        <div>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+            {/* Título del mes con estilo armonizado */}
+            <div className="flex items-center">
+              <div className="text-2xl font-bold px-4 py-2 rounded-md bg-blue-50 border border-blue-100 shadow-sm">
+                {nombresMeses[fechaActual.getMonth()]}{" "}
+                {fechaActual.getFullYear()}
+              </div>
+            </div>
+
+            {/* Indicadores estadísticos en una fila propia con margen superior */}
+            <div className="mt-4 mb-2">
+              <IndicadorDistribucion
+                eventos={eventos}
+                fechaActual={fechaActual}
+              />
+            </div>
+
+            {/* Botones de navegación con estilo armonizado */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={retrocederMes}
+                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm flex items-center"
+              >
+                <span className="mr-1">←</span> Anterior
+              </button>
+              <button
+                onClick={irAlMesActual}
+                className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors border border-gray-200 shadow-sm"
+              >
+                Hoy
+              </button>
+              <button
+                onClick={avanzarMes}
+                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm flex items-center"
+              >
+                Siguiente <span className="ml-1">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Contenedor principal del calendario - siempre 5 columnas para preservar estructura */}
+        <div className="grid grid-cols-5 gap-4 p-2 relative">
+          {/* Días del mes organizados por semanas y días */}
+          {generarCalendario()}
+
+          {/* Post-its con información de fin de semana */}
+          {(() => {
+            const viernes = [];
+            const mesActual = fechaActual.getMonth();
+            const añoActual = fechaActual.getFullYear();
+
+            // Buscar todos los viernes del mes actual
+            for (let i = 1; i <= obtenerDiasMes(fechaActual); i++) {
+              const fecha = new Date(añoActual, mesActual, i);
+              if (fecha.getDay() === 5) {
+                // 5 = viernes
+                viernes.push(
+                  <InfoFinDeSemana key={`finde-${i}`} fecha={fecha} />
+                );
+              }
+            }
+            return viernes;
+          })()}
+        </div>
       </div>
     </div>
   );
