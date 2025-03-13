@@ -40,18 +40,6 @@ export default function RootLayout({
             touch-action: manipulation;
           }
           
-          /* Forzar tema claro y deshabilitar tema oscuro */
-          @media (prefers-color-scheme: dark) {
-            html {
-              color-scheme: light only;
-            }
-            
-            .dark {
-              color-scheme: light only;
-              --background: oklch(1 0 0);
-              --foreground: oklch(0.129 0.042 264.695);
-            }
-          }
           
           /* Habilitar zoom con gestos */
           * {
