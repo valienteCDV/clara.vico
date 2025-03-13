@@ -55,9 +55,15 @@ interface DiaCeldaProps {
   fecha?: Date;
   eventos: EventoCalendario[];
   esDiaActual: boolean;
+  esOtroMes?: boolean;
 }
 
-const DiaCelda: React.FC<DiaCeldaProps> = ({ fecha, eventos, esDiaActual }) => {
+const DiaCelda: React.FC<DiaCeldaProps> = ({
+  fecha,
+  eventos,
+  esDiaActual,
+  esOtroMes = false,
+}) => {
   if (!fecha) {
     return <div className="min-h-32 md:min-h-40"></div>;
   }
@@ -93,7 +99,10 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({ fecha, eventos, esDiaActual }) => {
     backgroundColor:
       eventoCustodia && eventoCustodia.tipo === "custodia"
         ? eventoCustodia.colorFondo
-        : "#fffdf7", // Color crema suave para el post-it
+        : esOtroMes
+        ? "#f3f3f3" // Color gris claro para días de otro mes
+        : "#fffdf7", // Color crema suave para el post-it del mes actual
+    opacity: esOtroMes ? 0.8 : 1, // Reducir un poco la opacidad para días de otro mes
     transform: `rotate(${rotacion})`, // Inclinación aleatoria
     boxShadow: esDiaActual
       ? "0 0 20px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.4), 2px 4px 6px rgba(0,0,0,0.15)" // Sombra azul más intensa para el día actual
@@ -114,8 +123,12 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({ fecha, eventos, esDiaActual }) => {
       style={postItStyle}
     >
       <div className="flex justify-between items-start mb-1 pb-1 border-b border-gray-300">
-        <div className="font-semibold">
-          {diaSemana} {fecha.getDate()}
+        <div
+          className={`font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-sm md:text-base ${
+            esOtroMes ? "text-gray-500" : ""
+          }`}
+        >
+          {diaSemana} {fecha.getDate()} de {nombresMeses[fecha.getMonth()]}
         </div>
 
         <div className="flex items-center">
@@ -189,7 +202,34 @@ export const CalendarioMensual: React.FC = () => {
       0
     );
 
-    return generarEventosCalendario(primerDiaMes, ultimoDiaMes, calendarData);
+    // Determinar el primer día visible en el calendario (incluyendo días del mes anterior)
+    const primerDiaSemana = primerDiaMes.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+    const diasNecesariosAnterior =
+      primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
+
+    const primerDiaVisible = new Date(primerDiaMes);
+    primerDiaVisible.setDate(
+      primerDiaVisible.getDate() - diasNecesariosAnterior
+    );
+
+    // Determinar el último día visible en el calendario (incluyendo días del mes siguiente)
+    const ultimoDiaVisible = new Date(ultimoDiaMes);
+    const ultimoDiaSemana = ultimoDiaMes.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+    // Si el último día no es viernes (5), añadir días hasta llegar al siguiente viernes
+    if (ultimoDiaSemana !== 5) {
+      const diasNecesariosSiguiente =
+        ultimoDiaSemana < 5 ? 5 - ultimoDiaSemana : 5 + (7 - ultimoDiaSemana);
+      ultimoDiaVisible.setDate(
+        ultimoDiaVisible.getDate() + diasNecesariosSiguiente
+      );
+    }
+
+    // Generar eventos para todo el rango visible del calendario
+    return generarEventosCalendario(
+      primerDiaVisible,
+      ultimoDiaVisible,
+      calendarData
+    );
   }, [fechaActual]);
 
   const avanzarMes = () => {
@@ -209,39 +249,161 @@ export const CalendarioMensual: React.FC = () => {
     setFechaActual(new Date(now.getFullYear(), now.getMonth(), 1));
   };
 
-  // Generar el grid del calendario solo con días laborables
+  // Generar el grid del calendario organizado por semanas con días laborables ordenados
   const generarCalendario = () => {
     const hoy = new Date();
+    const año = fechaActual.getFullYear();
+    const mes = fechaActual.getMonth();
     const diasEnMes = obtenerDiasMes(fechaActual);
-    const dias = [];
 
-    // Agregar celdas para cada día del mes (solo días laborables)
-    for (let i = 1; i <= diasEnMes; i++) {
-      const fecha = new Date(
-        fechaActual.getFullYear(),
-        fechaActual.getMonth(),
-        i
-      );
+    // Información para el mes anterior
+    const mesAnterior = mes === 0 ? 11 : mes - 1;
+    const añoAnterior = mes === 0 ? año - 1 : año;
+    const diasMesAnterior = obtenerDiasMes(
+      new Date(añoAnterior, mesAnterior, 1)
+    );
 
-      // Solo incluir el día si es un día laborable (de lunes a viernes)
-      if (diasLaborables.includes(fecha.getDay())) {
-        const esDiaActual =
-          fecha.getDate() === hoy.getDate() &&
-          fecha.getMonth() === hoy.getMonth() &&
-          fecha.getFullYear() === hoy.getFullYear();
+    // Información para el mes siguiente (guardado para posible uso futuro)
+    // const mesSiguiente = mes === 11 ? 0 : mes + 1;
+    // const añoSiguiente = mes === 11 ? año + 1 : año;
 
-        dias.push(
-          <DiaCelda
-            key={`day-${i}`}
-            fecha={fecha}
-            eventos={eventos}
-            esDiaActual={esDiaActual}
-          />
-        );
+    // Determinar cuántas semanas necesitamos para este mes
+    const primerDiaMes = new Date(año, mes, 1);
+    const primerDiaSemana = primerDiaMes.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+
+    // Inicializar un array para almacenar todas las fechas a mostrar
+    const todasLasFechas: Array<{ fecha: Date; esOtroMes: boolean }> = [];
+
+    // Determinar si necesitamos días del mes anterior
+    let necesitaDiasMesAnterior = false;
+
+    // Encontrar el primer día laboral (lun-vie) del mes
+    const primerDiaLaboral = new Date(año, mes, 1);
+    while (!diasLaborables.includes(primerDiaLaboral.getDay())) {
+      primerDiaLaboral.setDate(primerDiaLaboral.getDate() + 1);
+    }
+
+    // Si el primer día laboral no es lunes, necesitamos días del mes anterior
+    if (primerDiaLaboral.getDay() !== 1) {
+      necesitaDiasMesAnterior = true;
+    }
+
+    // Solo agregar días del mes anterior si realmente los necesitamos
+    if (necesitaDiasMesAnterior) {
+      // Si es domingo (0), necesitamos 6 días laborables anteriores (para llegar al lunes previo)
+      // Si es otro día (2-6), necesitamos n-1 días anteriores (para llegar al lunes previo)
+      const diasNecesarios = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
+
+      for (let i = diasNecesarios; i > 0; i--) {
+        // Calcula el día del mes anterior
+        const diaAnterior = diasMesAnterior - i + 1;
+        const fecha = new Date(añoAnterior, mesAnterior, diaAnterior);
+
+        // Solo agregamos si es un día laborable
+        const diaSemana = fecha.getDay();
+        if (diasLaborables.includes(diaSemana)) {
+          todasLasFechas.push({
+            fecha: fecha,
+            esOtroMes: true,
+          });
+        }
       }
     }
 
-    return dias;
+    // 2. Agregar todos los días del mes actual
+    for (let i = 1; i <= diasEnMes; i++) {
+      const fecha = new Date(año, mes, i);
+      const diaSemana = fecha.getDay();
+
+      // Solo agregamos si es un día laborable
+      if (diasLaborables.includes(diaSemana)) {
+        todasLasFechas.push({
+          fecha: fecha,
+          esOtroMes: false,
+        });
+      }
+    }
+
+    // 3. Agregar días del mes siguiente si es necesario
+    // Calculamos cuántos días necesitamos para completar la última semana
+    // Aseguramos tener semanas completas de 5 días laborables
+    while (todasLasFechas.length % 5 !== 0) {
+      const ultimoDiaIndice = todasLasFechas.length - 1;
+      const ultimaFecha = todasLasFechas[ultimoDiaIndice].fecha;
+      const siguienteDia = new Date(ultimaFecha);
+      siguienteDia.setDate(ultimaFecha.getDate() + 1);
+
+      // Solo agregamos si es un día laborable
+      const diaSemana = siguienteDia.getDay();
+      if (diasLaborables.includes(diaSemana)) {
+        todasLasFechas.push({
+          fecha: siguienteDia,
+          esOtroMes: siguienteDia.getMonth() !== mes,
+        });
+      }
+    }
+
+    // Agrupar días en semanas (5 días laborables por semana)
+    const semanas: Array<Array<{ fecha: Date; esOtroMes: boolean } | null>> =
+      [];
+
+    for (let i = 0; i < todasLasFechas.length; i += 5) {
+      const semana = todasLasFechas.slice(i, i + 5);
+
+      // Crear una semana del tamaño exacto de días laborables (5)
+      const semanaArray: Array<{ fecha: Date; esOtroMes: boolean } | null> =
+        Array(5).fill(null);
+
+      // Ubicar cada día en su posición correcta según el día de la semana
+      semana.forEach((item) => {
+        const diaSemana = item.fecha.getDay();
+        if (diasLaborables.includes(diaSemana)) {
+          const indiceDia = diasLaborables.indexOf(diaSemana);
+          semanaArray[indiceDia] = item;
+        }
+      });
+
+      semanas.push(semanaArray);
+    }
+
+    // Convertir la estructura de semanas en celdas para el calendario
+    const celdas: React.ReactNode[] = [];
+
+    // Para cada semana
+    semanas.forEach((semana, indexSemana) => {
+      // Para cada día posible de la semana (lun-vie)
+      semana.forEach((item, indexDia) => {
+        if (item) {
+          const { fecha, esOtroMes } = item;
+
+          // Verificar si es el día actual
+          const esDiaActual =
+            fecha.getDate() === hoy.getDate() &&
+            fecha.getMonth() === hoy.getMonth() &&
+            fecha.getFullYear() === hoy.getFullYear();
+
+          celdas.push(
+            <DiaCelda
+              key={`semana-${indexSemana}-dia-${indexDia}`}
+              fecha={fecha}
+              eventos={eventos}
+              esDiaActual={esDiaActual}
+              esOtroMes={esOtroMes}
+            />
+          );
+        } else {
+          // Para días vacíos, añadir una celda vacía para mantener la estructura
+          celdas.push(
+            <div
+              key={`empty-${indexSemana}-${indexDia}`}
+              className="min-h-32 md:min-h-40"
+            ></div>
+          );
+        }
+      });
+    });
+
+    return celdas;
   };
 
   return (
@@ -320,8 +482,23 @@ export const CalendarioMensual: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-2 relative">
-        {/* Días del mes (solo días laborables, sin encabezado) */}
+      {/* Encabezado de los días de la semana */}
+      <div className="grid grid-cols-5 gap-4 mb-2">
+        {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"].map(
+          (dia, index) => (
+            <div
+              key={`header-${index}`}
+              className="px-2 py-1 font-semibold text-center"
+            >
+              {dia}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Contenedor principal del calendario */}
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-4 p-2 relative">
+        {/* Días del mes organizados por semanas y días */}
         {generarCalendario()}
 
         {/* Post-its con información de fin de semana */}

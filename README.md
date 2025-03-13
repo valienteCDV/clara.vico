@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Calendario Familiar con Régimen de Custodia y Actividades
 
-## Getting Started
+Este proyecto implementa un calendario visual interactivo diseñado para familias con régimen de custodia compartida, permitiendo visualizar fácilmente cuándo los niños están con cada progenitor y todas sus actividades programadas.
 
-First, run the development server:
+## Características Principales
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Visualización mensual** con diseño tipo "post-it" para días y eventos
+- **Régimen de custodia** claramente visualizado con colores diferenciados
+- **Actividades de los niños** organizadas cronológicamente
+- **Eventos de logística** (quién lleva/recoge a cada niño)
+- **Información de fin de semana** como post-its adicionales
+- **Navegación** entre meses con botones intuitivos
+
+## Vista Previa
+
+El calendario muestra:
+
+- Fondo de color para cada día según el progenitor responsable (verde para papá, violeta para mamá)
+- Actividades ordenadas cronológicamente para Clara (rosa) y Vico (celeste)
+- Iconos para llevar/recoger a los niños de sus actividades
+- Post-its laterales con información del fin de semana
+
+## Implementación Técnica
+
+El proyecto está desarrollado con:
+
+- **Next.js** como framework frontend
+- **Tailwind CSS** para estilos y diseño responsive
+- **TypeScript** para desarrollo tipado
+- **Componentes React** modulares y reutilizables
+
+## Estructura del Proyecto
+
+```
+app/
+├── src/
+│   ├── app/
+│   ├── components/ui/
+│   │   └── calendar/     # Componentes del calendario
+│   │       ├── calendario-mensual.tsx
+│   │       └── info-fin-de-semana.tsx
+│   └── lib/
+│       ├── calendar-data.ts   # Datos de custodia y actividades
+│       └── calendar-utils.ts  # Funciones de utilidad
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Lógica de Negocio
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Régimen de Custodia
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+El sistema implementa un régimen de custodia basado en semanas pares e impares:
 
-## Learn More
+- **Semanas pares**: Los domingos con mamá, lunes con papá, martes y miércoles con mamá, jueves con mamá, viernes y sábado con papá
+- **Semanas impares**: Los domingos con papá, lunes con mamá, martes y miércoles con mamá, jueves con papá, viernes y sábado con mamá
 
-To learn more about Next.js, take a look at the following resources:
+### Actividades Programadas
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Incluye un conjunto de actividades recurrentes para los niños:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Horarios escolares
+- Clases de inglés
+- Deportes (fútbol)
+- Actividades artísticas (baile)
+- Educación física
 
-## Deploy on Vercel
+Cada actividad tiene información de quién debe llevar y recoger al niño.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Documentación Detallada
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Para detalles técnicos sobre la implementación, configuración del proyecto y guías de mantenimiento, consulta [dev.md](./dev.md).
+
+## Uso
+
+Para ejecutar este proyecto localmente:
+
+1. Clona el repositorio
+2. Instala las dependencias:
+   ```bash
+   cd app
+   npm install
+   ```
+3. Inicia el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+4. Abre [http://localhost:3000](http://localhost:3000) en tu navegador
+
+## Mejoras Futuras
+
+- Persistencia de datos (guardado local o en nube)
+- Editor visual del régimen de custodia
+- Añadir notificaciones para eventos importantes
+- Vista alternativa semanal con más detalles
+- Exportación/importación del calendario
