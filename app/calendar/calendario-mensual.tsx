@@ -580,10 +580,9 @@ export const CalendarioMensual: React.FC = () => {
         WebkitOverflowScrolling: "touch",
         touchAction: "auto !important",
         msOverflowStyle: "none",
-        scrollbarWidth: "none",
       }}
     >
-      <div className="min-w-[950px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
+      <div className="min-w-[750px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
         {/* Estilos globales para animaciones */}
         <style jsx global>{`
           @keyframes pulseShadow {
