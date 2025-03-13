@@ -16,10 +16,10 @@ export const metadata: Metadata = {
   title: "",
   description: "",
   viewport: {
-    width: "1200",
-    initialScale: 0.7,
-    minimumScale: 0.1,
-    maximumScale: 5,
+    width: "device-width",
+    initialScale: 1,
+    minimumScale: 0.5,
+    maximumScale: 3,
     userScalable: true,
   },
 };
@@ -37,13 +37,11 @@ export default function RootLayout({
             background-color: #f0f4f8;
             overscroll-behavior: none;
             color-scheme: light only;
-            touch-action: manipulation;
           }
           
-          
-          /* Habilitar zoom con gestos */
+          /* Permitir todos los gestos táctiles, incluido el zoom */
           * {
-            touch-action: pan-x pan-y;
+            touch-action: auto;
           }
         `}</style>
       </head>
