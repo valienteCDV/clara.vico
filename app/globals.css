@@ -2,6 +2,21 @@
 
 @plugin "tailwindcss-animate";
 
+/* Mejoras para diseño responsivo en dispositivos móviles */
+@media screen and (max-width: 640px) {
+  html,
+  body {
+    -webkit-overflow-scrolling: touch;
+    max-width: 100vw;
+  }
+
+  /* Asegura que el overflow-x funcione correctamente en Safari iOS */
+  body {
+    position: relative;
+    width: 100%;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

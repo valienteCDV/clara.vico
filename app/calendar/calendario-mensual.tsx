@@ -233,12 +233,36 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
       ? "0 0 20px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.4), 2px 4px 6px rgba(0,0,0,0.15)" // Sombra azul más intensa para el día actual
       : "2px 4px 6px rgba(0,0,0,0.15)", // Sombra suave para otros días
     position: "relative", // Para posicionar el "pinche" de forma absoluta
-    padding: "12px",
+    padding: "10px 12px 16px 12px", // Reducimos padding arriba y aumentamos abajo para el badge
     border: "1px solid rgba(0,0,0,0.1)",
     transition: "all 0.3s ease",
     // Solo animar la sombra, no el post-it entero
     animation: esDiaActual ? "pulseShadow 2s infinite alternate" : "none",
+    // Limitamos la altura máxima para que los post-it sean más compactos
+    maxHeight: "200px",
   };
+
+  // Filtramos solo eventos de logística
+  const eventosLogistica = eventosDia.filter(
+    (evento) => evento.tipo === "logistica"
+  );
+
+  // Agrupamos eventos por actividadId
+  const eventosPorActividad: Record<string, EventoActividad[]> = {};
+
+  eventosLogistica.forEach((evento) => {
+    if (evento.tipo !== "logistica") return;
+
+    if (!eventosPorActividad[evento.actividadId]) {
+      eventosPorActividad[evento.actividadId] = [];
+    }
+
+    eventosPorActividad[evento.actividadId].push(evento as EventoActividad);
+  });
+
+  // Determinar si hay muchos eventos (más de 4)
+  const cantidadEventos = Object.keys(eventosPorActividad).length;
+  const tieneMuchosEventos = cantidadEventos > 4;
 
   return (
     <div
@@ -247,7 +271,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
       }`}
       style={postItStyle}
     >
-      <div className="flex justify-center items-start mb-1 pb-1 border-b border-gray-300">
+      <div className="flex justify-center items-start border-b border-gray-400">
         <div
           className={`font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-sm md:text-base ${
             esOtroMes ? "text-gray-500" : ""
@@ -271,31 +295,15 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
 
       <div className="flex-grow relative">
         {/* Renderizar todos los eventos agrupados por actividad */}
-        <div className="mt-2 space-y-1 relative z-10">
+        <div
+          className={`mt-2 relative z-10 ${
+            tieneMuchosEventos ? "space-y-0.5" : "space-y-1"
+          }`}
+        >
           {(() => {
-            // Filtramos solo eventos de logística
-            const eventosLogistica = eventosDia.filter(
-              (evento) => evento.tipo === "logistica"
-            );
-
-            // Agrupamos eventos por actividadId
-            const eventosPorActividad: Record<string, EventoActividad[]> = {};
-
-            eventosLogistica.forEach((evento) => {
-              if (evento.tipo !== "logistica") return;
-
-              if (!eventosPorActividad[evento.actividadId]) {
-                eventosPorActividad[evento.actividadId] = [];
-              }
-
-              eventosPorActividad[evento.actividadId].push(
-                evento as EventoActividad
-              );
-            });
-
             // Procesamos cada grupo de eventos
             return Object.entries(eventosPorActividad).map(
-              ([actividadId, eventos]) => {
+              ([actividadId, eventos], index) => {
                 // Ordenamos los eventos por hora
                 eventos.sort((a, b) => {
                   const aMinutos =
@@ -328,12 +336,17 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
                 return (
                   <div
                     key={actividadId}
-                    className="flex items-center text-xs p-1 rounded-sm mb-1 transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full"
+                    className={`flex items-center text-xs rounded-sm transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full ${
+                      tieneMuchosEventos ? "p-0.5 mb-0.5" : "p-1 mb-1"
+                    }`}
                     style={{
                       backgroundColor: eventoLlevar.colorActividad,
                       color: "#333333", // Texto oscuro para mejor contraste
                       border: `1px solid ${eventoLlevar.colorActividad}`,
                       fontWeight: 500, // Texto semi-negrita para mejor legibilidad
+                      // Superposición para eventos cuando hay muchos
+                      marginTop:
+                        tieneMuchosEventos && index > 0 ? "-4px" : "0px",
                     }}
                   >
                     <span className="whitespace-nowrap overflow-hidden text-ellipsis">
@@ -578,11 +591,17 @@ export const CalendarioMensual: React.FC = () => {
       className="w-full overflow-x-auto"
       style={{
         WebkitOverflowScrolling: "touch",
-        touchAction: "auto !important",
+        touchAction: "manipulation",
         msOverflowStyle: "none",
       }}
     >
-      <div className="min-w-[750px] sm:min-w-[1000px] max-w-screen-xl mx-auto p-1 sm:p-4">
+      <div className="min-w-[720px] w-full max-w-[1050] mx-auto sm:p-4">
+        {/* Número de versión */}
+        <div className="absolute top-2 right-4 z-50">
+          <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md shadow-sm">
+            v3.2
+          </span>
+        </div>
         {/* Estilos globales para animaciones */}
         <style jsx global>{`
           @keyframes pulseShadow {
