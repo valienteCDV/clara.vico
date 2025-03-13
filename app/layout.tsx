@@ -30,17 +30,37 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" className="light" data-force-theme="light">
       <head>
         <style>{`
           html, body {
             background-color: #f0f4f8;
             overscroll-behavior: none;
+            color-scheme: light only;
+            touch-action: manipulation;
+          }
+          
+          /* Forzar tema claro y deshabilitar tema oscuro */
+          @media (prefers-color-scheme: dark) {
+            html {
+              color-scheme: light only;
+            }
+            
+            .dark {
+              color-scheme: light only;
+              --background: oklch(1 0 0);
+              --foreground: oklch(0.129 0.042 264.695);
+            }
+          }
+          
+          /* Habilitar zoom con gestos */
+          * {
+            touch-action: pan-x pan-y;
           }
         `}</style>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased light`}
       >
         {children}
       </body>
