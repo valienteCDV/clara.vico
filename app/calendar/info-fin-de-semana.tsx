@@ -11,7 +11,7 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
   fecha,
   animar = false,
 }) => {
-  // Solo mostrar para los viernes
+  // Solo mostrar para los viernes (getDay() devuelve 5 para viernes)
   if (fecha.getDay() !== 5) return null;
 
   // Encontrar el progenitor que tiene la custodia para el fin de semana
@@ -36,7 +36,7 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
   // Esto permite que los post-its estén siempre en la misma posición vertical
   const indice = Math.floor((fecha.getDate() - 1) / 7); // 0 para primera semana, 1 para segunda, etc
   // Posición fija para cada índice de semana (en píxeles, no en porcentaje)
-  const posicionesFijas = [20, 220, 420, 620, 800];
+  const posicionesFijas = [40, 210, 370, 530, 800];
   const top = `${posicionesFijas[indice]}px`;
 
   // Estilo para el post-it de fin de semana, con rotación aleatoria consistente
@@ -48,21 +48,21 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
       : "0.5deg";
 
   // Posición del clip con rotación aleatoria pero consistente
-  const rotacionPinche = -15 + ((fecha.getDate() * 5) % 30);
+  const rotacionPinche = -105 + ((fecha.getDate() * 5) % 30);
   const postItStyle: React.CSSProperties = {
-    backgroundColor: progenitorFinDeSemana.colorFondo, // Usar el mismo color del progenitor
+    "--post-it-color": progenitorFinDeSemana.colorFondo, // Usar el mismo color del progenitor como variable CSS
     transform: `rotate(${rotacion})`,
-    boxShadow: "2px 4px 6px rgba(0,0,0,0.15)",
     position: "relative",
     padding: "8px",
-    border: "1px solid rgba(0,0,0,0.1)",
     width: "100%",
     height: "100%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-  };
+    fontFamily: "var(--font-caveat)",
+    // borderRadius se elimina porque ahora se gestiona mediante la clase CSS post-it
+  } as React.CSSProperties;
 
   // Clase CSS para la animación
   const clasePostIt = `w-28 h-36 post-it ${animar ? "sacudir-post-it" : ""}`;
@@ -75,11 +75,11 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
           style={{
             position: "absolute",
             top: "-12px",
-            left: "50%",
+            left: "15%",
             transform: `translateX(-50%) rotate(${rotacionPinche}deg)`,
             zIndex: 100,
             filter: "drop-shadow(2px 2px 2px rgba(0,0,0,0.3))",
-            color: "#cc3333",
+            color: "#2B5FA4FF",
             pointerEvents: "none",
           }}
         >

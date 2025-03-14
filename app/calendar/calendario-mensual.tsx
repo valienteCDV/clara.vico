@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { calendarData } from "../lib/calendar-data";
 import {
   EventoCalendario,
@@ -94,8 +94,7 @@ const IndicadorDistribucion: React.FC<IndicadorDistribucionProps> = ({
     };
   };
 
-  const { diasTotales, diasPorProgenitor, eventosPorProgenitor } =
-    calcularEstadisticas();
+  const { diasTotales, diasPorProgenitor } = calcularEstadisticas();
 
   // No mostrar nada si no hay datos para el mes
   if (diasTotales === 0) return null;
@@ -104,7 +103,7 @@ const IndicadorDistribucion: React.FC<IndicadorDistribucionProps> = ({
     <div className="flex flex-wrap gap-2 items-center justify-center">
       {/* Indicadores para Mamá */}
       <div
-        className="flex items-center px-3 py-1.5 rounded-md shadow-sm transition-transform hover:scale-105"
+        className="flex items-center px-3 py-1.5 shadow-md transition-transform hover:scale-105"
         style={{
           backgroundColor: "#E6D6FF",
           border: "1px solid rgba(0,0,0,0.1)",
@@ -115,13 +114,11 @@ const IndicadorDistribucion: React.FC<IndicadorDistribucionProps> = ({
           {diasPorProgenitor.mama} días (
           {Math.round((diasPorProgenitor.mama / diasTotales) * 100)}%)
         </span>
-        <span className="mx-1 text-xs opacity-60">•</span>
-        <span className="text-sm">{eventosPorProgenitor.mama} eventos</span>
       </div>
 
       {/* Indicadores para Papá */}
       <div
-        className="flex items-center px-3 py-1.5 rounded-md shadow-sm transition-transform hover:scale-105"
+        className="flex items-center px-3 py-1.5 shadow-md transition-transform hover:scale-105"
         style={{
           backgroundColor: "#D6FFE6",
           border: "1px solid rgba(0,0,0,0.1)",
@@ -132,8 +129,6 @@ const IndicadorDistribucion: React.FC<IndicadorDistribucionProps> = ({
           {diasPorProgenitor.papa} días (
           {Math.round((diasPorProgenitor.papa / diasTotales) * 100)}%)
         </span>
-        <span className="mx-1 text-xs opacity-60">•</span>
-        <span className="text-sm">{eventosPorProgenitor.papa} eventos</span>
       </div>
     </div>
   );
@@ -149,6 +144,9 @@ const nombresDiasCompletos = [
   "Viernes",
   "Sábado",
 ];
+
+// Nombres de los días de la semana abreviados
+const nombresDiasAbreviados = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 // Días laborables que queremos mostrar (1 = lunes, 5 = viernes)
 const diasLaborables = [1, 2, 3, 4, 5];
@@ -173,6 +171,21 @@ const nombresMeses = [
   "Octubre",
   "Noviembre",
   "Diciembre",
+];
+
+const nombresMesesAbreviados = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
 ];
 
 // Componente de celda para un día del calendario
@@ -216,9 +229,9 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
   // Generar rotación aleatoria pero consistente basada en el día del mes
   const rotacion =
     fecha.getDate() % 3 === 0
-      ? "1deg"
+      ? "2deg"
       : fecha.getDate() % 3 === 1
-      ? "-1deg"
+      ? "3deg"
       : "0.5deg";
 
   // Preparamos los estilos y clases para el efecto post-it
@@ -226,7 +239,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
     eventoCustodia && eventoCustodia.tipo === "custodia"
       ? eventoCustodia.colorFondo
       : esOtroMes
-      ? "#f3f3f3" // Color gris claro para días de otro mes
+      ? "#F3F3F370" // Color gris claro para días de otro mes
       : "#fffdf7"; // Color crema suave para el post-it del mes actual
 
   // Construimos las clases CSS
@@ -234,7 +247,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
     "post-it",
     esDiaActual ? "dia-actual" : "",
     animar ? "sacudir-post-it" : "",
-    "h-auto min-h-40 overflow-y-auto hover:shadow-lg flex flex-col",
+    "h-auto min-h-40 overflow-y-hidden hover:overflow-y-auto hover:shadow-lg flex flex-col",
     esDiaActual ? "ring-2 ring-offset-2 ring-blue-400" : "",
   ]
     .filter(Boolean)
@@ -242,15 +255,12 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
 
   // Propiedades de estilo que necesitamos aplicar directamente
   const postItStyle: React.CSSProperties = {
-    backgroundColor,
-    opacity: esOtroMes ? 0.8 : 1,
+    backgroundColor: backgroundColor,
+    opacity: esOtroMes ? 0.6 : 1,
     "--rotacion-inicial": rotacion,
-    padding: "10px 12px 16px 12px",
-    border: "1px solid rgba(0,0,0,0.1)",
-    boxShadow: esDiaActual
-      ? undefined // Ya aplicado por la clase dia-actual
-      : "2px 4px 6px rgba(0,0,0,0.15)",
+    "--post-it-color": backgroundColor, // Añadimos la variable CSS para el color del post-it
     maxHeight: "200px",
+    overflowX: "hidden", // Evitamos el scroll horizontal
   } as React.CSSProperties;
 
   // Filtramos solo eventos de logística
@@ -280,10 +290,19 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
       <div className="flex justify-center items-start border-b border-gray-400">
         <div
           className={`font-semibold whitespace-nowrap overflow-hidden text-ellipsis text-sm md:text-base ${
-            esOtroMes ? "text-gray-500" : ""
+            esOtroMes ? "text-gray-400" : ""
           }`}
         >
-          {diaSemana} {fecha.getDate()} de {nombresMeses[fecha.getMonth()]}
+          {/* Versión completa para pantallas medianas y grandes */}
+          <span className="hidden sm:inline">
+            {diaSemana} {fecha.getDate()} de {nombresMeses[fecha.getMonth()]}
+          </span>
+
+          {/* Versión abreviada para pantallas pequeñas */}
+          <span className="sm:hidden">
+            {nombresDiasAbreviados[fecha.getDay()]} {fecha.getDate()}{" "}
+            {nombresMesesAbreviados[fecha.getMonth()]}
+          </span>
         </div>
       </div>
 
@@ -303,7 +322,7 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
         {/* Renderizar todos los eventos agrupados por actividad */}
         <div
           className={`mt-2 relative z-10 ${
-            tieneMuchosEventos ? "space-y-0.5" : "space-y-1"
+            tieneMuchosEventos ? "space-y-0" : "space-y-1"
           }`}
         >
           {(() => {
@@ -339,18 +358,19 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
                   .toString()
                   .padStart(2, "0");
 
+                // Determinar la clase según el niño
+                const claseNiño =
+                  eventoLlevar.niñoId === "vico"
+                    ? "evento-vico"
+                    : "evento-clara";
+
                 return (
                   <div
                     key={actividadId}
-                    className={`flex items-center text-xs rounded-sm transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full ${
+                    className={`flex items-center text-xs transition-all hover:scale-105 shadow-sm overflow-hidden max-w-full ${
                       tieneMuchosEventos ? "p-0.5 mb-0.5" : "p-1 mb-1"
-                    }`}
+                    } ${claseNiño}`}
                     style={{
-                      backgroundColor: eventoLlevar.colorActividad,
-                      color: "#333333", // Texto oscuro para mejor contraste
-                      border: `1px solid ${eventoLlevar.colorActividad}`,
-                      fontWeight: 500, // Texto semi-negrita para mejor legibilidad
-                      // Superposición para eventos cuando hay muchos
                       marginTop:
                         tieneMuchosEventos && index > 0 ? "-4px" : "0px",
                     }}
@@ -387,6 +407,26 @@ export const CalendarioMensual: React.FC = () => {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
+  const avanzarMes = useCallback(() => {
+    // Prevenimos múltiples clics durante la animación
+    if (animandoTransicion) return;
+
+    setDireccionTransicion("izquierda");
+    setFechaActual(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+    );
+  }, [animandoTransicion, setDireccionTransicion, setFechaActual]);
+
+  const retrocederMes = useCallback(() => {
+    // Prevenimos múltiples clics durante la animación
+    if (animandoTransicion) return;
+
+    setDireccionTransicion("derecha");
+    setFechaActual(
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+    );
+  }, [animandoTransicion, setDireccionTransicion, setFechaActual]);
+
   // Efecto para ejecutar la animación cuando se carga la página
   useEffect(() => {
     // Primera carga
@@ -408,7 +448,7 @@ export const CalendarioMensual: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", manejarTeclas);
     };
-  }, []);
+  }, [retrocederMes, avanzarMes]);
 
   // Efecto para animar los post-its cuando cambia el mes
   useEffect(() => {
@@ -469,26 +509,6 @@ export const CalendarioMensual: React.FC = () => {
       calendarData
     );
   }, [fechaActual]);
-
-  const avanzarMes = () => {
-    // Prevenimos múltiples clics durante la animación
-    if (animandoTransicion) return;
-
-    setDireccionTransicion("izquierda");
-    setFechaActual(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-    );
-  };
-
-  const retrocederMes = () => {
-    // Prevenimos múltiples clics durante la animación
-    if (animandoTransicion) return;
-
-    setDireccionTransicion("derecha");
-    setFechaActual(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-    );
-  };
 
   const irAlMesActual = () => {
     // Prevenimos múltiples clics durante la animación
@@ -667,16 +687,16 @@ export const CalendarioMensual: React.FC = () => {
 
   return (
     <div
-      className="w-full overflow-x-auto"
+      className="w-full"
       style={{
         WebkitOverflowScrolling: "touch",
         touchAction: "manipulation",
         msOverflowStyle: "none",
       }}
     >
-      <div className="min-w-[720px] w-full max-w-[1120px] mx-auto p-1 sm:p-4 relative">
+      <div className="min-w-[690px] w-full max-w-[1120px] mx-auto relative p-4">
         {/* Número de versión - en la parte inferior derecha alineado con los post-it */}
-        <div className="absolute right-0 bottom-1 z-10">
+        <div className="absolute -right-16 opacity-50 bottom-1">
           <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md shadow-sm">
             v3.3
           </span>
@@ -695,7 +715,7 @@ export const CalendarioMensual: React.FC = () => {
             </div>
 
             {/* Indicadores estadísticos en una fila propia con margen superior */}
-            <div className="mt-4 mb-2">
+            <div className="mt-0 mb-0">
               <IndicadorDistribucion
                 eventos={eventos}
                 fechaActual={fechaActual}
@@ -703,7 +723,7 @@ export const CalendarioMensual: React.FC = () => {
             </div>
 
             {/* Botones de navegación con estilo armonizado */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <button
                 onClick={retrocederMes}
                 className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm flex items-center"
@@ -727,7 +747,7 @@ export const CalendarioMensual: React.FC = () => {
         </div>
 
         {/* Contenedor principal del calendario - siempre 5 columnas para preservar estructura */}
-        <div className="grid grid-cols-5 gap-4 p-2 relative">
+        <div className="calendario-grid sm:pr-0 pr-4">
           {/* Días del mes organizados por semanas y días */}
           {generarCalendario()}
 

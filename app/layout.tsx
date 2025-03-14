@@ -26,32 +26,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="light" data-force-theme="light">
       <head>
-        {/* Meta tag viewport con configuración óptima para móviles */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
         />
-        <style>{`
-          html {
-            background-color: #f0f4f8;
-            color-scheme: light only;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-          }
-          body {
-            background-color: #f0f4f8;
-            color-scheme: light only;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-          }
-        `}</style>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased light`}
+        style={{ margin: 0, padding: 0 }}
       >
         {children}
       </body>

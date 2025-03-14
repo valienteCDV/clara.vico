@@ -73,23 +73,23 @@ export const calendarData: CalendarData = {
     },
   ],
   regimenTenencia: {
-    semanasPares: {
-      domingo: "mama",
+    semanasImpares: {
       lunes: "papa",
       martes: "mama",
       miercoles: "mama",
       jueves: "mama",
       viernes: "papa",
       sabado: "papa",
-    },
-    semanasImpares: {
       domingo: "papa",
+    },
+    semanasPares: {
       lunes: "mama",
       martes: "mama",
       miercoles: "mama",
       jueves: "papa",
       viernes: "mama",
       sabado: "mama",
+      domingo: "mama",
     },
   },
   actividades: [

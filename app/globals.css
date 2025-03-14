@@ -2,21 +2,6 @@
 
 @plugin "tailwindcss-animate";
 
-/* Mejoras para diseño responsivo en dispositivos móviles */
-@media screen and (max-width: 640px) {
-  html,
-  body {
-    -webkit-overflow-scrolling: touch;
-    max-width: 100vw;
-  }
-
-  /* Asegura que el overflow-x funcione correctamente en Safari iOS */
-  body {
-    position: relative;
-    width: 100%;
-  }
-}
-
 /* Animaciones para el calendario */
 @keyframes pulseShadow {
   0% {
@@ -51,19 +36,136 @@
   }
 }
 
-/* Clases de animación para el calendario */
-.post-it {
-  transition: all 0.3s ease;
-  transform: rotate(var(--rotacion-inicial, 0deg));
-  position: relative;
+/* Animación para ampliar el post-it al tocarlo */
+@keyframes moveUpAnimation {
+  0% {
+    transform: translateY(0) scale(1) rotate(var(--rotacion-inicial, 0deg));
+  }
+  100% {
+    transform: translateY(-10px) scale(1.2)
+      rotate(var(--rotacion-inicial, 0deg));
+  }
 }
 
+/* Diseño del post-it */
+.post-it {
+  --post-it-color: #fdfd96; /* Cambia este color según tu preferencia */
+  background-color: var(--post-it-color);
+  background-image: linear-gradient(
+    300deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(0, 0, 0, 0.05)
+  );
+  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 5px; /* Padding para móviles (por defecto) */
+  position: relative;
+  transition: all 0.3s ease;
+  border: none;
+  transform: rotate(
+    var(--rotacion-inicial, 0deg)
+  ); /* Aplicar rotación inicial */
+  cursor: pointer; /* Indicar que es interactivo */
+}
+
+/* Efecto hover para los post-its */
+.post-it:hover {
+  transform: translateY(-10px) scale(1.2) rotate(var(--rotacion-inicial, 0deg)) !important;
+  z-index: 50 !important; /* Valor muy alto para asegurarse de estar por encima de todo */
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3) !important;
+  position: relative !important; /* Forzar posicionamiento relativo */
+  transition: all 0.3s ease;
+}
+
+/* Padding responsivo para dispositivos mayores a sm (640px) */
+@media screen and (min-width: 640px) {
+  .post-it {
+    padding: 3px; /* Padding más grande para desktop */
+  }
+}
+
+/* Estilos para el grid del calendario */
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  position: relative; /* Para mantener el posicionamiento absoluto de los post-its de fin de semana */
+  margin: 0 -5px; /* Margen negativo para superponer ligeramente en móviles */
+  gap: 0; /* Sin espacio entre post-its en móviles */
+}
+
+/* Estilos específicos para los post-its de fin de semana */
+.calendario-grid > div.absolute {
+  position: absolute !important; /* Forzar posición absoluta para los post-its de fin de semana */
+  z-index: 10; /* Asegurar que estén por encima de los demás post-its */
+  margin: 0; /* Sin márgenes negativos para los post-its de fin de semana */
+  right: -76px; /* Mantener la posición original a la derecha */
+}
+
+/* Estilos para los post-its en el grid */
+.calendario-grid > div {
+  margin: 0 -2px; /* Superposición adicional en móviles */
+  position: relative; /* Para que funcione el z-index */
+}
+
+/* Establecer el orden de apilamiento para que el primer día (lunes) esté encima */
+.calendario-grid > div:nth-child(5n + 1) {
+  z-index: 5;
+}
+.calendario-grid > div:nth-child(5n + 2) {
+  z-index: 4;
+}
+.calendario-grid > div:nth-child(5n + 3) {
+  z-index: 3;
+}
+.calendario-grid > div:nth-child(5n + 4) {
+  z-index: 2;
+}
+.calendario-grid > div:nth-child(5n + 5) {
+  z-index: 1;
+}
+
+/* Ajustes responsivos para desktop */
+@media screen and (min-width: 640px) {
+  .calendario-grid {
+    margin: 0; /* Eliminar margen negativo */
+    gap: 10px; /* Más espacio entre post-its en desktop */
+  }
+
+  .calendario-grid > div {
+    margin: 0; /* Sin superposición en desktop */
+  }
+
+  /* Aumentar margen izquierdo para eventos en desktop */
+  .post-it .mt-2 {
+    margin-left: 10px;
+  }
+}
+
+/* Día actual con borde azul más visible */
 .post-it.dia-actual {
   animation: pulseShadow 2s infinite alternate;
+  border: 1px solid #3b82f6; /* Borde azul para el día actual */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* Sombra externa adicional */
 }
 
 .sacudir-post-it {
   animation: sacudirPostIt 0.5s ease-in-out;
+}
+
+/* Estilos para los eventos de los niños */
+.evento-vico {
+  color: #0c62b8 !important;
+  font-weight: 600;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.evento-clara {
+  color: #d03c6e !important;
+  font-weight: 600;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 @theme inline {
