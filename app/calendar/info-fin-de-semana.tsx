@@ -36,7 +36,7 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
   // Esto permite que los post-its estén siempre en la misma posición vertical
   const indice = Math.floor((fecha.getDate() - 1) / 7); // 0 para primera semana, 1 para segunda, etc
   // Posición fija para cada índice de semana (en píxeles, no en porcentaje)
-  const posicionesFijas = [40, 210, 370, 530, 800];
+  const posicionesFijas = [40, 210, 370, 530, 700];
   const top = `${posicionesFijas[indice]}px`;
 
   // Estilo para el post-it de fin de semana, con rotación aleatoria consistente
