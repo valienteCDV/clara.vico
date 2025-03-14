@@ -18,6 +18,40 @@
   }
 }
 
+/* Definimos variables CSS para direcciones aleatorias */
+:root {
+  --direccion-entrada-x: 300px; /* Valor por defecto,  */
+  --direccion-entrada-y: 0px; /* Valor por defecto,  */
+}
+
+@keyframes entradaPostIt {
+  0% {
+    opacity: 0;
+    transform: translate(var(--direccion-entrada-x), var(--direccion-entrada-y))
+      rotate(var(--rotacion-inicial, 0deg));
+  }
+  70% {
+    opacity: 0.5;
+    transform: translate(
+        calc(var(--direccion-entrada-x) * -0.07),
+        calc(var(--direccion-entrada-y) * -0.07)
+      )
+      rotate(calc(var(--rotacion-inicial, 0deg) + 5deg));
+  }
+  85% {
+    opacity: 1;
+
+    transform: translate(
+        calc(var(--direccion-entrada-x) * 0.03),
+        calc(var(--direccion-entrada-y) * 0.03)
+      )
+      rotate(calc(var(--rotacion-inicial, 0deg) - 3deg));
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--rotacion-inicial, 0deg));
+  }
+}
+
 @keyframes sacudirPostIt {
   0% {
     transform: rotate(var(--rotacion-inicial, 0deg));
@@ -50,6 +84,8 @@
 /* Diseño del post-it */
 .post-it {
   --post-it-color: #fdfd96; /* Cambia este color según tu preferencia */
+  --direccion-entrada-x: 300px; /* Valor por defecto si no se establece en JS */
+  --direccion-entrada-y: 0px; /* Valor por defecto si no se establece en JS */
   background-color: var(--post-it-color);
   background-image: linear-gradient(
     300deg,
@@ -92,12 +128,43 @@
   gap: 0; /* Sin espacio entre post-its en móviles */
 }
 
-/* Estilos específicos para los post-its de fin de semana */
-.calendario-grid > div.absolute {
+/* Estilos específicos para los post-its de fin de semana - NOTA: right se sobreescribe por JavaScript */
+.finde-semana-post-it {
   position: absolute !important; /* Forzar posición absoluta para los post-its de fin de semana */
   z-index: 10; /* Asegurar que estén por encima de los demás post-its */
-  margin: 0; /* Sin márgenes negativos para los post-its de fin de semana */
-  right: -76px; /* Mantener la posición original a la derecha */
+  top: 0; /* Se posicionará mediante JavaScript */
+  /* right NO define la posición final, es determinada por positionWeekendPostIts() */
+  width: 86px; /* Ancho para móviles */
+  transition: all 0.3s ease; /* Transición suave para cambios de tamaño */
+  /* Configuración responsive */
+  @media (min-width: 640px) {
+    width: 112px; /* Ancho para tamaños mayores */
+  }
+}
+
+/* Script para posicionar los post-its de fin de semana alineados con sus viernes */
+@layer utilities {
+  /* Este código se ejecutará en el cliente para posicionar los post-its */
+  @keyframes positionWeekendPostIts {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Agregamos un script interno usando CSS para alinear los post-its de fin de semana con sus respectivos viernes */
+.calendario-grid::after {
+  content: "";
+  display: none;
+  visibility: hidden;
+}
+
+/* Aseguramos que los post-its de fin de semana tengan una transición suave cuando se reposicionan */
+.finde-semana-post-it {
+  transition: top 0.3s ease-in-out;
 }
 
 /* Estilos para los post-its en el grid */
@@ -147,8 +214,18 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* Sombra externa adicional */
 }
 
+.entrada-post-it {
+  animation: entradaPostIt 0.3s ease-out;
+}
+
+/* Aplicamos la animación de entrada a todos los post-it cuando tienen la clase sacudir-post-it */
 .sacudir-post-it {
-  animation: sacudirPostIt 0.5s ease-in-out;
+  animation: entradaPostIt 0.9s ease-out forwards;
+}
+
+/* Esta clase se aplicará después de que termine la animación de entrada */
+.post-it.animado {
+  animation: sacudirPostIt 0.3s ease-in-out;
 }
 
 /* Estilos para los eventos de los niños */

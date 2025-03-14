@@ -9,6 +9,10 @@ import {
   EventoActividad,
 } from "../lib/calendar-utils";
 import { InfoFinDeSemana } from "./info-fin-de-semana";
+import {
+  positionWeekendPostIts,
+  setupWeekendPostitObserver,
+} from "./info-fin-de-semana";
 
 // Componente para mostrar indicadores de distribución de días
 interface IndicadorDistribucionProps {
@@ -204,6 +208,27 @@ const DiaCelda: React.FC<DiaCeldaProps> = ({
   esOtroMes = false,
   animar = false,
 }) => {
+  // Declaramos el useRef antes de cualquier condición para evitar errores en React
+  const postItRef = React.useRef<HTMLDivElement>(null);
+
+  // useEffect debe estar declarado siempre en el mismo orden y no debe depender de condiciones
+  React.useEffect(() => {
+    if (!postItRef.current || !fecha) return;
+
+    // Usar el día como semilla para generar dirección
+    if (fecha) {
+      const seed = fecha.getDate() + fecha.getMonth() * 31;
+
+      // Ecuaciones para generar direcciones consistentes pero en el cliente
+      const x = Math.sin(seed * 0.3) * 600;
+      const y = Math.cos(seed * 0.7) * 600;
+
+      // Asignar valores CSS en el cliente
+      postItRef.current.style.setProperty("--direccion-entrada-x", `${x}px`);
+      postItRef.current.style.setProperty("--direccion-entrada-y", `${y}px`);
+    }
+  }, [fecha]);
+
   if (!fecha) {
     return <div className="min-h-40"></div>;
   }
@@ -449,6 +474,54 @@ export const CalendarioMensual: React.FC = () => {
       window.removeEventListener("keydown", manejarTeclas);
     };
   }, [retrocederMes, avanzarMes]);
+
+  // Función para asignar direcciones aleatorias a los post-its
+  const asignarDireccionesAleatorias = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    // Obtenemos todos los post-its del calendario (tanto días como fines de semana)
+    const allPostIts = document.querySelectorAll(".post-it");
+
+    allPostIts.forEach((postIt) => {
+      const element = postIt as HTMLElement;
+      // Generamos direcciones aleatorias para X e Y
+      const randomX = Math.floor(Math.random() * 600) - 300; // Entre -300 y 300px
+      const randomY = Math.floor(Math.random() * 600) - 300; // Entre -300 y 300px
+
+      // Asignamos las variables CSS para las direcciones de entrada
+      element.style.setProperty("--direccion-entrada-x", `${randomX}px`);
+      element.style.setProperty("--direccion-entrada-y", `${randomY}px`);
+    });
+  }, []);
+
+  // Efecto para posicionar los post-its de fin de semana y asignar direcciones aleatorias
+  useEffect(() => {
+    // Inicializar el observador para posicionar los post-its
+    const limpiarObservador = setupWeekendPostitObserver();
+
+    // Asignar direcciones aleatorias para la entrada de los post-its
+    asignarDireccionesAleatorias();
+
+    // Ejecutar el posicionamiento después de renderizar
+    setTimeout(() => {
+      positionWeekendPostIts();
+
+      // Si se ha actualizado el mes, aseguramos que las posiciones son correctas
+      if (!animacionCargaPagina && direccionTransicion) {
+        setTimeout(positionWeekendPostIts, 300);
+      }
+    }, 100);
+
+    // Limpiar el observador cuando el componente se desmonte
+    return () => {
+      if (limpiarObservador) limpiarObservador();
+    };
+  }, [
+    fechaActual,
+    animacionCargaPagina,
+    direccionTransicion,
+    asignarDireccionesAleatorias,
+  ]);
 
   // Efecto para animar los post-its cuando cambia el mes
   useEffect(() => {

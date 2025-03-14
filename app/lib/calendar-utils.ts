@@ -34,19 +34,17 @@ export interface EventoActividad {
 export type EventoCalendario = EventoCustodia | EventoActividad;
 
 /**
- * Determina si una fecha está en una semana par o impar
+ * Determina si una fecha está en una semana par o impar dentro del mes
  * @param fecha - Fecha a evaluar
  * @returns 'par' o 'impar'
  */
 export function esSemanaParImpar(fecha: Date): "par" | "impar" {
-  // Obtener el número de semana en el año
-  const primerDia = new Date(fecha.getFullYear(), 0, 1);
-  const dias = Math.floor(
-    (fecha.getTime() - primerDia.getTime()) / (24 * 60 * 60 * 1000)
-  );
-  const numeroSemana = Math.ceil((fecha.getDay() + 1 + dias) / 7);
+  // Calcular la semana del mes (1-based)
+  const diaMes = fecha.getDate();
+  const semanaMes = Math.ceil(diaMes / 7);
 
-  return numeroSemana % 2 === 0 ? "par" : "impar";
+  // 1ª y 3ª semana son impares, 2ª y 4ª son pares
+  return semanaMes % 2 === 0 ? "par" : "impar";
 }
 
 /**
