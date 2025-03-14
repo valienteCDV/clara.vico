@@ -136,28 +136,44 @@ export function setupWeekendPostitObserver() {
 
 interface InfoFinDeSemanaProps {
   fecha: Date; // Fecha del viernes
-  animar?: boolean; // Indica si se debe animar el post-it
 }
 
-export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
-  fecha,
-  animar = false,
-}) => {
+export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
   // Referencia para acceder al elemento
   const postItRef = React.useRef<HTMLDivElement>(null);
 
   // Hook para asegurar que usamos el posicionamiento cuando el componente se monta
   useEffect(() => {
     // Este efecto solo se ejecuta en el lado del cliente
-    if (typeof window !== "undefined") {
-      // Pequeño retraso para asegurarnos que el DOM está listo
-      const timer = setTimeout(() => {
+    if (typeof window !== "undefined" && fecha.getDay() === 5) {
+      // Solo para viernes
+      // Generar ID aquí dentro del efecto
+      const semanaIdLocal = Math.ceil(fecha.getDate() / 7);
+      const relacionIdLocal = `finde-semana-${semanaIdLocal}`;
+
+      // Pequeño retraso para posicionar los post-its
+      const positionTimer = setTimeout(() => {
         positionWeekendPostIts();
       }, 100);
 
-      return () => clearTimeout(timer);
+      // Retraso adicional para mostrar los post-its después de las otras animaciones
+      const showTimer = setTimeout(() => {
+        // Buscar el post-it actual y aplicarle la clase mostrar
+        const postItElement = document.getElementById(relacionIdLocal);
+        if (postItElement) {
+          postItElement.classList.add("mostrar");
+        }
+      }, 400); // 0.4 segundo, tiempo suficiente para que terminen las otras animaciones
+
+      return () => {
+        clearTimeout(positionTimer);
+        clearTimeout(showTimer);
+      };
     }
-  }, []);
+  }, [fecha]);
+
+  // Los post-its de fin de semana aparecerán al final sin animación,
+  // solo con una transición de opacidad después de un retraso
 
   // Solo mostrar para los viernes (getDay() devuelve 5 para viernes)
   if (fecha.getDay() !== 5) return null;
@@ -208,9 +224,8 @@ export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({
     fontFamily: "var(--font-caveat)",
   } as React.CSSProperties;
 
-  // Clase CSS para la animación con diseño responsivo
-  const clasePostIt = `post-it ${animar ? "sacudir-post-it" : ""} 
-    w-24 h-32 sm:w-28 sm:h-36 transition-all duration-100`;
+  // Clase CSS para el diseño responsivo (sin animación específica)
+  const clasePostIt = `post-it w-24 h-32 sm:w-28 sm:h-36 transition-all duration-100`;
 
   return (
     <div

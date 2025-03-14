@@ -24,6 +24,7 @@
   --direccion-entrada-y: 0px; /* Valor por defecto,  */
 }
 
+/* Animación de entrada para los post-its normales (días) */
 @keyframes entradaPostIt {
   0% {
     opacity: 0;
@@ -51,6 +52,9 @@
     transform: translate(0, 0) rotate(var(--rotacion-inicial, 0deg));
   }
 }
+
+/* No necesitamos una animación para los post-its de fin de semana,
+   simplemente los mostraremos al final usando la propiedad de visualización */
 
 @keyframes sacudirPostIt {
   0% {
@@ -135,11 +139,18 @@
   top: 0; /* Se posicionará mediante JavaScript */
   /* right NO define la posición final, es determinada por positionWeekendPostIts() */
   width: 86px; /* Ancho para móviles */
-  transition: all 0.3s ease; /* Transición suave para cambios de tamaño */
+  opacity: 0; /* Inicialmente oculto */
+  transition: opacity 0.5s ease; /* Solo transición para opacidad */
+  transition-delay: 0.1s; /* Retraso mínimo para que sea visible después de posicionarse */
   /* Configuración responsive */
   @media (min-width: 640px) {
     width: 112px; /* Ancho para tamaños mayores */
   }
+}
+
+/* Clase que se aplica automáticamente después de que la página se carga */
+.finde-semana-post-it.mostrar {
+  opacity: 1;
 }
 
 /* Script para posicionar los post-its de fin de semana alineados con sus viernes */
@@ -163,9 +174,7 @@
 }
 
 /* Aseguramos que los post-its de fin de semana tengan una transición suave cuando se reposicionan */
-.finde-semana-post-it {
-  transition: top 0.3s ease-in-out;
-}
+/* Esta regla se combina con la definición anterior de .finde-semana-post-it */
 
 /* Estilos para los post-its en el grid */
 .calendario-grid > div {

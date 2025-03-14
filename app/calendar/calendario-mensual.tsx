@@ -771,7 +771,7 @@ export const CalendarioMensual: React.FC = () => {
         {/* Número de versión - en la parte inferior derecha alineado con los post-it */}
         <div className="absolute -right-16 opacity-50 bottom-1">
           <span className="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-md shadow-sm">
-            v3.7
+            v3.8
           </span>
         </div>
         {/* Las animaciones ahora están en globals.css */}
