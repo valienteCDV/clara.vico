@@ -136,6 +136,7 @@ export function setupWeekendPostitObserver() {
 
 interface InfoFinDeSemanaProps {
   fecha: Date; // Fecha del viernes
+  animar?: boolean; // Controla si el componente debe animarse
 }
 
 export const InfoFinDeSemana: React.FC<InfoFinDeSemanaProps> = ({ fecha }) => {
